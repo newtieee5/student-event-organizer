@@ -151,7 +151,7 @@ function App() {
 
   const handleDeleteEvent = (id: string) => {
     if (confirm('Are you sure you want to delete this event?')) {
-      setEvents(events.filter e => e.id !== id));
+      setEvents(events.filter(e => e.id !== id));
       if (selectedEvent?.id === id) setSelectedEvent(null);
     }
   };
@@ -474,7 +474,7 @@ function App() {
           
           if (error) throw error;
           
-          setAttendees(prev => prev.map a => 
+          setAttendees(prev => prev.map(a => 
               a.id === registrationId ? { ...a, status } : a
           ));
       } catch (err: any) {
