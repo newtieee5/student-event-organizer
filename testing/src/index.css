@@ -9,21 +9,37 @@
 }
 
 .card {
-  @apply bg-white rounded-lg shadow-sm border border-gray-100 p-4;
+  @apply bg-white rounded-lg shadow-sm border border-gray-100 p-4 relative overflow-hidden;
+}
+
+/* Ensure content fits on smaller screens */
+.container {
+    @apply px-4 sm:px-6 lg:px-8 mx-auto w-full max-w-7xl;
+}
+
+/* Prevent horizontal scroll on mobile */
+html, body {
+    @apply overflow-x-hidden w-full;
+}
+
+/* Common Layout Utilities for Mobile */
+.mobile-stack {
+    @apply flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4;
 }
 
 .btn-primary {
-  @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center;
 }
 
 .btn-secondary {
-  @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors duration-200;
+  @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors duration-200 whitespace-nowrap flex items-center justify-center;
 }
 
 .btn-danger {
-  @apply bg-red-50 text-red-600 px-4 py-2 rounded-md hover:bg-red-100 transition-colors duration-200;
+  @apply bg-red-50 text-red-600 px-4 py-2 rounded-md hover:bg-red-100 transition-colors duration-200 whitespace-nowrap flex items-center justify-center;
 }
 
 .input-field {
   @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
 }
+

@@ -1,6 +1,7 @@
-import {useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, MapPin, Calendar, Clock, ExternalLink, RefreshCw } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { StudentEvent, User } from '../types';
 
 interface OrganizerEvent {
   id: string;
@@ -16,13 +17,15 @@ interface OrganizerEvent {
 }
 
 interface MarketplaceProps {
+  events: StudentEvent[];
+  user: User | null;
   onRegister: (event: any) => void; 
 }
 
-export function Marketplace({ onRegister }: MarketplaceProps) {
+export function Marketplace({ events: _studentEvents, user: _user, onRegister }: MarketplaceProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
-  const [events, setEvents] = useState<OrganizerEvent[]>([]);
+  const [marketEvents, setMarketEvents] = useState<OrganizerEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,6 +46,7 @@ export function Marketplace({ onRegister }: MarketplaceProps) {
       if (error) throw error;
 
       if (data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mappedEvents: OrganizerEvent[] = data.map((e: any) => ({
           id: e.id,
           title: e.title,
@@ -55,7 +59,7 @@ export function Marketplace({ onRegister }: MarketplaceProps) {
           price: 0,
           image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
         }));
-        setEvents(mappedEvents);
+        setMarketEvents(mappedEvents);
       }
     } catch (err: any) {
       console.error('Error fetching marketplace events:', err);
@@ -65,13 +69,13 @@ export function Marketplace({ onRegister }: MarketplaceProps) {
     }
   };
 
-  const filteredEvents = events.filter(event => 
+  const filteredEvents = marketEvents.filter(event => 
     (categoryFilter === 'All' || event.category === categoryFilter) &&
     (event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
      (event.organizerName && event.organizerName.toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
-  const categories = ['All', ...Array.from(new Set(events.map(e => e.category)))];
+  const categories = ['All', ...Array.from(new Set(marketEvents.map(e => e.category)))];
 
   if (loading) return <div className="text-center p-8">Loading events...</div>;
 

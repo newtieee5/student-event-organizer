@@ -1,5 +1,5 @@
 export type Priority = 'High' | 'Medium' | 'Low';
-export type EventType = 'Academic' | 'Personal' | 'Organizer';
+export type EventType = 'Academic' | 'Personal' | 'Organizer' | 'Social' | 'Work';
 export type TaskStatus = 'Pending' | 'In Progress' | 'Completed';
 
 export interface User {

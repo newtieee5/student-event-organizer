@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Users, Calendar, DollarSign, Activity, PieChart, BarChart, Trash2, Edit2, Search } from 'lucide-react';
-import { MOCK_ORGANIZER_EVENTS, User } from '../types';
+import { MOCK_ORGANIZER_EVENTS, User, StudentEvent } from '../types';
 
 const MOCK_USERS: User[] = [
   { id: '1', name: 'John Doe', email: 'john@student.edu', role: 'student' },
@@ -10,14 +10,18 @@ const MOCK_USERS: User[] = [
   { id: '5', name: 'Alex Johnson', email: 'alex@organizer.com', role: 'organizer' },
 ];
 
-export function AdminDashboard() {
+interface AdminDashboardProps {
+  events: StudentEvent[];
+}
+
+export function AdminDashboard({ events }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'settings'>('overview');
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [searchTerm, setSearchTerm] = useState('');
 
   const stats = [
     { label: 'Total Users', value: users.length.toString(), icon: <Users className="text-blue-600" />, change: '+12%' },
-    { label: 'Active Events', value: '56', icon: <Calendar className="text-green-600" />, change: '+5%' },
+    { label: 'Active Events', value: events.length.toString(), icon: <Calendar className="text-green-600" />, change: '+5%' },
     { label: 'Revenue', value: 'KES 450k', icon: <DollarSign className="text-orange-600" />, change: '+23%' },
     { label: 'System Health', value: '98%', icon: <Activity className="text-purple-600" />, change: 'Good' },
   ];

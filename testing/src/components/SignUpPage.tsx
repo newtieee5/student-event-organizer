@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar as CalendarIcon, Lock, Mail, User as UserIcon, ArrowLeft } from 'lucide-react';
 import { supabase } from '../services/supabase';
-import { sendEmail } from '../services/emailService';
+import { sendEmail, sendWelcomeEmail } from '../services/emailService';
 import { User } from '../types';
 
 interface SignUpPageProps {
@@ -107,6 +107,15 @@ export function SignUpPage({ onSignUp, onNavigateToLogin }: SignUpPageProps) {
          } catch(e) {
              console.error("Profile creation exception", e);
          }
+
+         // Send Welcome Email
+         const newUser: User = {
+            id: data.user.id,
+            name: name,
+            email: email,
+            role: role
+         };
+         await sendWelcomeEmail(newUser).catch(err => console.error("Welcome email failed", err));
 
          // Auto login after signup
          onSignUp({

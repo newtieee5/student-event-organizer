@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Plus, Calendar as CalendarIcon, DollarSign, CheckSquare, Clock, MapPin, AlertCircle, Trash2, Edit2, X, ChevronRight, PieChart, Car, Settings } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, DollarSign, CheckSquare, Clock, MapPin, AlertCircle, Trash2, Edit2, X, ChevronRight, PieChart, Car, Settings, Mail } from 'lucide-react';
 import { User, StudentEvent, Task, Budget, Priority, EventType } from './types';
 import { Marketplace } from './components/Marketplace';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -14,7 +14,7 @@ import { SignUpPage } from './components/SignUpPage';
 import { ForgotPasswordPage } from './components/ForgotPasswordPage';
 import { AIChatbot } from './components/AIChatbot';
 import { SettingsPage } from './components/SettingsPage';
-import { sendEmail } from './services/emailService';
+import { sendEventReminder, sendBudgetSummary, sendNewEventNotification } from './services/emailService';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -230,6 +230,11 @@ function App() {
         if (budgetError) throw budgetError;
       }
 
+      // Check if this is a new PUBLIC event and notify
+      if (isNew && event.type === 'Organizer' && user.email) {
+          sendNewEventNotification(user, { ...event, id: savedEventId }).catch(console.error);
+      }
+
       // Update Local State (Refetching is safest, but we can manually update)
       // fetchEvents(); // Uncomment to force refresh
       // For now, update local state manually to avoid network roundtrip delay
@@ -432,12 +437,8 @@ function App() {
     
     // Notify user via email
     if (user && user.email) {
-       sendEmail(
-          user.email,
-          `Registration Confirmed: ${event.title}`,
-          `You have successfully registered for <strong>${event.title}</strong>.<br>Date: ${event.date}<br>Time: ${event.time}<br>Location: ${event.location}`,
-          user.name
-       ).catch(err => console.error("Email notification failed", err));
+       // Send structured confirmation/reminder
+       sendEventReminder(user, event).catch(err => console.error("Email notification failed", err));
     }
   };
 
@@ -588,9 +589,9 @@ function App() {
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {activeTab === 'marketplace' && <Marketplace onRegister={handleRegisterEvent} />}
+        {activeTab === 'marketplace' && <Marketplace events={events} user={user} onRegister={handleRegisterEvent} />}
         {activeTab === 'admin' && user?.role === 'admin' && (
-            <AdminDashboard />
+            <AdminDashboard events={events} />
           )}
 
         {activeTab === 'dashboard' && user?.role === 'student' && (
@@ -831,7 +832,7 @@ function App() {
           onFetchAttendees={fetchAttendees}
           loadingAttendees={loadingAttendees}
           onUpdateAttendance={updateAttendance}
-          userRole={user?.role}
+          user={user}
         />
       )}
 
@@ -871,7 +872,7 @@ function StatCard({ label, value, icon }: { label: string, value: string | numbe
   );
 }
 
-function EventModal({ event, onClose, onSave, attendees, onFetchAttendees, loadingAttendees, onUpdateAttendance, userRole }: { event: StudentEvent | null, onClose: () => void, onSave: (e: StudentEvent) => void, attendees: any[], onFetchAttendees: (eventId: string) => void, loadingAttendees: boolean, onUpdateAttendance: (registrationId: string, status: string) => void, userRole?: string }) {
+function EventModal({ event, onClose, onSave, attendees, onFetchAttendees, loadingAttendees, onUpdateAttendance, user }: { event: StudentEvent | null, onClose: () => void, onSave: (e: StudentEvent) => void, attendees: any[], onFetchAttendees: (eventId: string) => void, loadingAttendees: boolean, onUpdateAttendance: (registrationId: string, status: string) => void, user: User | null }) {
   const [formData, setFormData] = React.useState<StudentEvent>(event || {
     id: crypto.randomUUID(),
     title: '',
@@ -891,7 +892,7 @@ function EventModal({ event, onClose, onSave, attendees, onFetchAttendees, loadi
 
   // Determine available tabs
   const tabs = ['details', 'tasks', 'budget'];
-  if (userRole === 'organizer' || userRole === 'admin') {
+  if (user?.role === 'organizer' || user?.role === 'admin') {
       tabs.push('attendees');
   }
 
@@ -968,7 +969,9 @@ function EventModal({ event, onClose, onSave, attendees, onFetchAttendees, loadi
 
         {/* Modal Tabs */}
         <div className="flex border-b border-gray-200 px-6">
-           {tabs.map(tab => (
+           {tabs.map(tab => {
+              if (tab === 'attendees' && user?.role !== 'organizer' && user?.role !== 'admin') return null;
+              return (
               <button 
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -978,7 +981,7 @@ function EventModal({ event, onClose, onSave, attendees, onFetchAttendees, loadi
               >
                 {tab}
               </button>
-           ))}
+           )})}
         </div>
 
         {/* Modal Body */}
@@ -1007,7 +1010,7 @@ function EventModal({ event, onClose, onSave, attendees, onFetchAttendees, loadi
                         value={formData.type} 
                         onChange={e => setFormData({...formData, type: e.target.value as EventType})}
                     >
-                       {userRole === 'organizer' && <option value="Organizer">Public Event</option>}
+                       {user?.role === 'organizer' && <option value="Organizer">Public Event</option>}
                        <option value="Academic">Academic</option>
                        <option value="Personal">Personal</option>
                        <option value="Social">Social</option>
@@ -1076,7 +1079,14 @@ function EventModal({ event, onClose, onSave, attendees, onFetchAttendees, loadi
               <div>
                  <div className="flex justify-between items-center mb-4">
                     <h4 className="text-lg font-medium text-gray-800">Budget Tracker (KES)</h4>
-                    <button onClick={addBudgetItem} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"><Plus size={16}/> Add Item</button>
+                    <div className="flex gap-2">
+                       <button onClick={() => {
+                           if (!user?.email) return alert('No email set.');
+                           sendBudgetSummary(user, formData);
+                           alert('Budget summary sent!');
+                       }} className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"><Mail size={16}/> Email Report</button>
+                       <button onClick={addBudgetItem} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"><Plus size={16}/> Add Item</button>
+                    </div>
                  </div>
                  
                  <div className="bg-gray-50 p-4 rounded-lg mb-4 grid grid-cols-2 gap-4">

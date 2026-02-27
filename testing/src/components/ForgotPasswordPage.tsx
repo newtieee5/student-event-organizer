@@ -131,3 +131,8 @@ export function ForgotPasswordPage({ onNavigateToLogin }: ForgotPasswordPageProp
     </div>
   );
 }
+
+// NOTE: Supabase handles the actual reset email logic by default.
+// If we wanted to use our custom email service, we would need to generate the link server-side (Admin API)
+// and call sendPasswordResetEmail(email, link).
+// For now, we rely on Supabase, but we could trigger a notification if needed.
