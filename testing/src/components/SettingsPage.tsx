@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { supabase } from '../services/supabase';
+// import { supabase } from '../services/supabase';
 import { MapPin, Car, Bus, Footprints, Save } from 'lucide-react';
+
 
 interface SettingsPageProps {
   user: User | null;
